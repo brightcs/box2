@@ -1,0 +1,205 @@
+<?php
+
+/**
+ * @file
+ * Commerce Coupon Userpoints Module
+ */
+
+/**
+ * Implements hook_commerce_coupon_type_configure().
+ */
+function commerce_coupon_userpoints_commerce_coupon_type_configure($bundle, $reset = FALSE) {
+  // Skip all $bundles except the userpoints coupon type.
+  if ($bundle != 'commerce_coupon_userpoints') {
+    return;
+  }
+  // Create the commerce_coupon fields.
+  $entity_type = 'commerce_coupon';
+  $field_data_arr = commerce_coupon_userpoints_get_field_data($bundle, $entity_type);
+  $instance_data_arr = commerce_coupon_userpoints_get_field_instance($bundle, $entity_type);
+
+  foreach ($field_data_arr as $field_data) {
+    $field_name = $field_data['field_name'];
+    $field = field_info_field($field_name);
+    $instance = field_info_instance($entity_type, $field_name, $bundle);
+
+    if (empty($field) || $reset) {
+      if (empty($field)) {
+        $field = field_create_field($field_data);
+      }
+      else {
+        $field = field_update_field($field_data);
+      }
+    }
+
+    if (empty($instance) || $reset) {
+      $instance_data = $instance_data_arr[$field_name];
+
+      if (empty($instance)) {
+        field_create_instance($instance_data);
+      }
+      else {
+        field_update_instance($instance_data);
+      }
+    }
+  }
+}
+
+/**
+ * So the above is not so messy, here are the fields.
+ */
+function commerce_coupon_userpoints_get_field_data($bundle, $entity_type) {
+  return array(
+    'userpoints_coupon_title' => array(
+      'field_name' => 'userpoints_coupon_title',
+      'type' => 'text',
+      'label' => t('Title'),
+      'cardinality' => 1,
+      'entity_types' => array($entity_type),
+      'translatable' => FALSE,
+      'locked' => FALSE,
+    ),
+    'userpoints_coupon_userpoints' => array(
+      'field_name' => 'userpoints_coupon_userpoints',
+      'type' => 'entityreference',
+      'label' => t('Userpoints Type'),
+      'type' => 'taxonomy_term_reference',
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => 'userpoints',
+            'parent' => 0,
+          ),
+        ),
+      ),
+    ),
+    'userpoints_coupon_order_points' => array(
+      'field_name' => 'userpoints_coupon_order_points',
+      'type' => 'number_integer',
+      'label' => t('Order Bonus: Number of Points'),
+      'description' => t('This many points of type selected above, e.g. 100 are awarded to the user upon reaching the purchase minumum.'),
+      'cardinality' => 1,
+      'entity_types' => array($entity_type),
+      'translatable' => FALSE,
+      'locked' => FALSE,
+    ),
+    'userpoints_coupon_order_min' => array(
+      'field_name' => 'userpoints_coupon_order_min',
+      'type' => 'number_decimal',
+      'label' => t('Order Bonus: Purchase Minimum'),
+      'description' => t('The total currency value the order sub total (before tax/shipping/etc) must reach for a user to be awarded points. For no minimum, enter 0.'),
+      'cardinality' => 1,
+      'entity_types' => array($entity_type),
+      'translatable' => FALSE,
+      'locked' => FALSE,
+    ),
+    'userpoints_coupon_product_points' => array(
+      'field_name' => 'userpoints_coupon_product_points',
+      'type' => 'number_integer',
+      'label' => t('Product Bonus: Number of Points'),
+      'description' => t('Additional points awarded for each product of some type in the cart. eg. When "product1" is selected, the user will receive 100 bonus points with this coupon. Enter 0 for no bonus.'),
+      'cardinality' => 1,
+      'entity_types' => array($entity_type),
+      'translatable' => FALSE,
+      'locked' => FALSE,
+    ),
+    'userpoints_coupon_products' => array(
+      'field_name' => 'userpoints_coupon_products',
+      'type' => 'entityreference',
+      'label' => t('Product Bonus: Eligible Products'),
+      'description' => t('The products eligible for the product bonus points.'),
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'settings' => array(
+        'target_type' => 'commerce_product',
+      ),
+    ),
+  );
+}
+
+/**
+ * These are the field instances of the fields above.
+ */
+function commerce_coupon_userpoints_get_field_instance($bundle, $entity_type) {
+  return array(
+    'userpoints_coupon_title' => array(
+      'field_name' => 'userpoints_coupon_title',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Title'),
+      'required' => TRUE,
+      'display' => array(),
+    ),
+    'userpoints_coupon_userpoints' => array(
+      'field_name' => 'userpoints_coupon_userpoints',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Userpoints Type'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'settings' => array(
+        'target_type' => 'userpoints',
+      ),
+    ),
+    'userpoints_coupon_order_points' => array(
+      'field_name' => 'userpoints_coupon_order_points',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Order Bonus: Number of Points'),
+      'description' => t('This many points of type selected above, e.g. 100 are awarded to the user upon reaching the purchase minumum.'),
+      'required' => TRUE,
+      'display' => array(),
+      'settings' => array(
+        'min' => '0',
+      ),
+    ),
+    'userpoints_coupon_order_min' => array(
+      'field_name' => 'userpoints_coupon_order_min',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Order Bonus: Purchase Minimum'),
+      'description' => t('The total currency value the order sub total (before tax/shipping/etc) must reach for a user to be awarded points. For no minimum, enter 0.'),
+      'required' => TRUE,
+      'display' => array(),
+      'settings' => array(
+        'min' => '0',
+      ),
+    ),
+    'userpoints_coupon_product_points' => array(
+      'field_name' => 'userpoints_coupon_product_points',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Product Bonus: Number of Points'),
+      'description' => t('Additional points awarded for each product of some type in the cart. eg. When "product1" is selected, the user will receive 100 bonus points with this coupon. Enter 0 for no bonus.'),
+      'required' => TRUE,
+      'display' => array(),
+      'settings' => array(
+        'min' => '0',
+      ),
+    ),
+    'userpoints_coupon_products' => array(
+      'field_name' => 'userpoints_coupon_products',
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => t('Product Bonus: Eligible Products'),
+      'description' => t('The products eligible for the product bonus points.'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'settings' => array(
+        'target_type' => 'commerce_product',
+      ),
+    ),
+  );
+}
+
+/**
+ * Alter the granted amount.
+ */
+function commerce_coupon_userpoints_commerce_coupon_granted_amount_alter(&$amount, $coupon, $values) {
+  if ($coupon->type == 'commerce_coupon_userpoints') {
+    $order = commerce_order_load($values->order_id);
+    $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
+    $amount = $order_wrapper->field_userpoints_earned->value();
+  }
+}

@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * Install userpoints coupon types and its fields.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function commerce_coupon_userpoints_install() {
+  $t = get_t();
+  drupal_load('module', 'commerce');
+  $values = array(
+    'type' => 'commerce_coupon_userpoints',
+    'label' => $t('Userpoints Coupon'),
+  );
+
+  $coupon_type = commerce_coupon_type_create($values);
+  commerce_coupon_type_save($coupon_type, TRUE);
+
+  $field_name = "field_userpoints_earned";
+  // Check if the field already exists.
+  if (!field_info_field($field_name)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'number_integer',
+    );
+    field_create_field($field);
+
+    $field_instance = array(
+      'field_name' => $field_name,
+      'entity_type' => 'commerce_order',
+      'bundle' => 'commerce_order',
+      'type' => 'number_integer',
+      'label' => $t('Userpoints Earned'),
+    );
+    field_create_instance($field_instance);
+  }
+
+  $field_name = "field_userpoints_earned_type";
+  // Check if the field already exists.
+  if (!field_info_field($field_name)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => 'taxonomy_term_reference',
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => 'userpoints',
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_field($field);
+
+    $field_instance = array(
+      'field_name' => $field_name,
+      'entity_type' => 'commerce_order',
+      'bundle' => 'commerce_order',
+      'type' => 'taxonomy_term_reference',
+      'label' => $t('Userpoints Earned Type'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+      'settings' => array(
+        'allowed_values' => array(
+          array(
+            'vocabulary' => 'userpoints',
+            'parent' => 0,
+          ),
+        ),
+      ),
+    );
+    field_create_instance($field_instance);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function commerce_coupon_userpoints_uninstall() {
+  // Make sure commerce.module is loaded so that commerce_delete_instances()
+  // is available.
+  drupal_load('module', 'commerce');
+  // The function commerce_coupon_type_delete() can't be used here because
+  // commerce_coupon module might not be enabled anymore at this point.
+  db_delete('commerce_coupon_type')
+      ->condition('type', 'commerce_coupon_userpoints')
+      ->execute();
+
+  // Delete all fields that belong to the module's coupon type.
+  commerce_delete_instances('commerce_coupon', 'commerce_coupon_userpoints');
+
+  // Also delete coupons.
+  db_delete('commerce_coupon')
+      ->condition('type', 'commerce_coupon_userpoints')
+      ->execute();
+
+  field_delete_instance('field_userpoints_earned');
+  field_delete_field('field_userpoints_earned');
+  field_delete_instance('field_userpoints_earned_type');
+  field_delete_field('field_userpoints_earned_type');
+}
+
+/**
+ * Implements hook_disable().
+ */
+function commerce_coupon_userpoints_disable() {
+  drupal_load('module', 'commerce_coupon');
+  commerce_coupon_type_disable('commerce_coupon_userpoints');
+}
+
+/**
+ * Implements hook_enable().
+ */
+function commerce_coupon_userpoints_enable() {
+  drupal_load('module', 'commerce_coupon');
+  commerce_coupon_type_enable('commerce_coupon_userpoints');
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function commerce_coupon_userpoints_update_7001(&$sandbox) {
+  // The update system is going to flush all caches anyway, so nothing to do.
+}

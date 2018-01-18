@@ -1,0 +1,7 @@
+name = "Commerce Price Table Import"
+description = Add support for commerce_price_table in feeds. "2,56|1|19";"2,33|20|-1"
+package = Features
+core = "7.x"
+version = "7.x-1.0"
+
+dependencies[] = "feeds"
